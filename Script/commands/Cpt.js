@@ -2,73 +2,86 @@ const axios = require('axios');
 const fs = require('fs-extra');
 const path = require('path');
 const request = require('request');
+const os = require('os');
 
 module.exports.config = {
-    name: '\n',
-    version: '1.0.0',
+    name: "/",
+    version: "6.0.0",
     hasPermssion: 0,
-    credits: 'BELAL BOTX666',
-    description: 'This command is for using my bot in your group.',
-    commandCategory: 'Info',
-    usages: '/',
-    cooldowns: 11,
-    dependencies: {
-        'request': '',
-        'fs-extra': '',
-        'axios': ''
-    }
+    credits: "BELAL BOTX666",
+    description: "অ্যাডভান্সড পারফরম্যান্স এবং টাইম-বেসড গ্রিটিং ইনক্লুডেড",
+    commandCategory: "Info",
+    usages: "/",
+    cooldowns: 3
 };
 
 module.exports.run = async function({ api, event }) {
-    const Stream = require('fs-extra');
+    const threadID = event.threadID;
+    
+    // ১. লাইভ পারফরম্যান্স ক্যালকুলেশন
+    const uptime = process.uptime();
+    const hours = Math.floor(uptime / (60 * 60));
+    const minutes = Math.floor((uptime % (60 * 60)) / 60);
+    const ram = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2);
+    const ping = Date.now() - event.timestamp;
 
-    // একবারে পুরো লেখা
-    const messageBody = `🌸 Assalamualaikum 🌸  
-🌺🌼 আমি আশা করি আপনি এই বট ব্যবহার করে অনেক মজা পাবেন ✨
-অন্যান্য বট থেকে আমার বট সব থেকে পাওয়ারফুল এইজন্যই এটা ব্যবহার করতে আপনি বেশি পছন্দ করবেন।
-আপনি চাইলে এটি আপনার গ্রুপে ও নিয়ে যেতে পারেন !🎉🤗  
+    // ২. স্মার্ট টাইম-বেসড গ্রিটিং
+    const hour = new Date().getHours();
+    let timeGreeting = hour < 12 ? "Good Morning" : hour < 18 ? "Good Afternoon" : "Good Evening";
 
-☢️ To view any command 📌  
-☺️ Me AI chatbot ☢️ 
-😈 My name Bot for baby 🍼 
-⭐ model BOTX666 🖥️
-🥰 My Admin চাঁদের পাহাড় ✡️ 
-🪬 Owner Belal YT
-📩 help for admin https://www.facebook.com/mahi.gaming.165
-/Help  
-/Bot  
-/Info  
+    // ৩. রাজকীয় ডিজাইন টেক্সট
+    const messageBody = `🌸 𝐀𝐬𝐬𝐚𝐥𝐚𝐦𝐮𝐚𝐥𝐚𝐢𝐤𝐮𝐦 🌸
+${timeGreeting}! আশা করি আমাদের এই পাওয়ারফুল এআই বটটি ব্যবহার করে আপনি সেরা অভিজ্ঞতা পাবেন। 🚀
 
-𝐁𝐨𝐭 𝐎𝐰𝐧𝐞𝐫➢ ┄┉❈✡️⋆⃝চাঁদেড়~পাহাড়✿⃝🪬❈┉┄`;
+✨ 💠 ━━━ ◤ 𝐁𝐄𝐋𝐀𝐋 𝐁𝐎𝐓 ◢ ━━━ 💠 ✨
+   
+   ｢ 🛰️ 𝗦𝗬𝗦𝗧𝗘𝗠 𝗗𝗜𝗔𝗚𝗡𝗢𝗦𝗧𝗜𝗖𝗦 🛰️ ｣
 
-    // লোকাল ফাইল path
-    const filePath = path.join(__dirname, 'cyber.jpg');
+◈ 𝐒𝐭𝐚𝐭𝐮𝐬 : 𝐎𝐍𝐋𝐈𝐍𝐄 [🟢]
+◈ 𝐔𝐩𝐭𝐢𝐦𝐞 : ${hours}h ${minutes}m Active
+◈ 𝐑𝐀𝐌 𝐔𝐬𝐞 : ${ram} MB
+◈ 𝐋𝐚𝐭𝐞𝐧𝐜𝐲 : ${ping}ms (Fast)
 
-    // নতুন ইমেজ লিংকগুলো
+   ｢ 🪬 𝗖𝗢𝗥𝗘 𝗜𝗡𝗧𝗘𝗟𝗟𝗜𝗚𝗘𝗡𝗖𝗘 🪬 ｣
+
+◈ 𝐍𝐚𝐦𝐞 : BELAL BOT X666 ✡️
+◈ 𝐌𝐨𝐝𝐞𝐥 : V6-ULTRA NEURAL
+◈ 𝐀𝐝𝐦𝐢𝐧 : চাঁদের পাহাড় ✡️
+◈ 𝐎𝐰𝐧𝐞𝐫 : Belal YT [🛡️]
+
+   ｢ 🔗 𝗘𝗫𝗖𝗟𝗨𝗦𝗜𝗩𝗘 𝗔𝗖𝗖𝗘𝗦𝗦 ｣
+
+📩 𝐂𝐨𝐧𝐭𝐚𝐜𝐭 : m.me/mahi.gaming.165
+📡 𝐒𝐢𝐠𝐧𝐚𝐥 : Type /help to Access
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+🔱 𝐎𝐰𝐧𝐞𝐫 𝐒𝐢𝐠 : ┄┉❈✡️⋆⃝চাঁদেড়~পাহাড়✿⃝🪬❈┉┄
+━━━━━━━━━━━━━━━━━━━━━━━━
+『 🛸 𝐒𝐭𝐚𝐲 𝐀𝐡𝐞𝐚𝐝 𝐰𝐢𝐭𝐡 𝐁𝐄𝐋𝐀𝐋 𝐁𝐎𝐓 𝐗𝟔𝟔𝟔 』`;
+
+    const cacheDir = path.join(__dirname, 'cache');
+    if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir);
+    const filePath = path.join(cacheDir, 'slash_ultra.jpg');
+
     const images = [
-        'https://i.imgur.com/IZZa8RL.jpeg',
-        'https://i.imgur.com/eTxOTwc.jpeg',
-        'https://i.imgur.com/qSjYag6.jpeg',
-        'https://i.imgur.com/vpPt78y.jpeg',
-        'https://i.imgur.com/CRPz9BU.jpeg',
-        'https://i.imgur.com/qSjYag6.jpeg',
-        'https://i.imgur.com/CNJi9p7.jpeg'
-        
+        'https://i.imgur.com/IZZa8RL.jpeg', 'https://i.imgur.com/eTxOTwc.jpeg',
+        'https://i.imgur.com/qSjYag6.jpeg', 'https://i.imgur.com/vpPt78y.jpeg',
+        'https://i.imgur.com/CRPz9BU.jpeg', 'https://i.imgur.com/CNJi9p7.jpeg'
     ];
 
-    // র্যান্ডম ইমেজ বেছে নেওয়া
     const imageUrl = images[Math.floor(Math.random() * images.length)];
-    const imageStream = request.get(encodeURI(imageUrl)).pipe(Stream.createWriteStream(filePath));
 
-    // ইমেজ ডাউনলোড শেষ হলে মেসেজ পাঠানো
-    imageStream.on('close', () => {
-        api.sendMessage(
-            {
-                body: messageBody,
-                attachment: Stream.createReadStream(filePath)
-            },
-            event.threadID,
-            () => Stream.unlinkSync(filePath) // পাঠানোর পরে ফাইল ডিলিট
-        );
-    });
+    const callback = () => {
+        api.sendMessage({
+            body: messageBody,
+            attachment: fs.createReadStream(filePath)
+        }, threadID, () => {
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        });
+    };
+
+    request(encodeURI(imageUrl))
+        .pipe(fs.createWriteStream(filePath))
+        .on('close', () => callback());
 };
+                
