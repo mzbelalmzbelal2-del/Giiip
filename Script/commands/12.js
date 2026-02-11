@@ -1,13 +1,14 @@
 const schedule = require('node-schedule');
 const axios = require('axios');
 const moment = require('moment-timezone');
+require('moment-duration-format'); // এটি আপটাইম ফরম্যাটের জন্য প্রয়োজন
 
 module.exports.config = {
   name: 'autosent',
-  version: '25.0.0',
+  version: '26.0.0',
   hasPermssion: 0,
-  credits: 'Âßhråfùl Îßlām x Gemini',
-  description: 'পাওয়ারফুল শর্ট আপডেট + ব্যাটারি ও আপটাইম',
+  credits: 'Belal x Gemini',
+  description: 'অটোমেটিক প্রতি ঘণ্টায় আপডেট ও পাওয়ারফুল স্ট্যাটাস',
   commandCategory: 'system',
   usages: '[]',
   cooldowns: 2
@@ -42,24 +43,24 @@ const quotes = {
 
 const startTime = Date.now();
 
-module.exports.onLoad = ({ api }) => {
+module.exports.onLoad = async ({ api }) => {
   const rule = new schedule.RecurrenceRule();
   rule.tz = 'Asia/Dhaka';
-  rule.minute = 0; 
+  rule.minute = 0; // প্রতি ঘণ্টার শুরুতে কাজ করবে
 
   schedule.scheduleJob(rule, async () => {
     try {
       const now = moment().tz('Asia/Dhaka');
       const time = now.format('hh:mm A');
-      const date = now.format('DD/MM/YY');
+      const date = now.format('DD/MM/YYYY');
       const hour = now.hour();
 
-      // 🌡️ Weather System (Fix for Kurigram/Rowmari)
-      let weather = "Error ☁️";
+      // 🌡️ Weather System (Kurigram/Rowmari)
+      let weather = "Signal Weak 📡";
       try {
         const res = await axios.get(`https://api.openweathermap.org/data/2.5/weather?lat=25.8103&lon=89.6487&units=metric&appid=e38b33e1d689b0284980484b9071060b`);
         weather = `${Math.round(res.data.main.temp)}°C | ${res.data.weather[0].main}`;
-      } catch (e) { weather = "Signal Weak 📡"; }
+      } catch (e) { }
 
       // 🕋 Prayer Times
       let prayers = "Updating...";
@@ -67,21 +68,32 @@ module.exports.onLoad = ({ api }) => {
         const pr = await axios.get(`https://api.aladhan.com/v1/timingsByCity?city=Kurigram&country=Bangladesh&method=2`);
         const p = pr.data.data.timings;
         prayers = `F:${p.Fajr} D:${p.Dhuhr} A:${p.Asr} M:${p.Maghrib} I:${p.Isha}`;
-      } catch (e) {}
+      } catch (e) { }
 
       // 🚀 Power Stats
-      const uptime = moment.duration(Date.now() - startTime).format("D[d] H[h] m[m]");
+      const uptime = moment.duration(Date.now() - startTime).format("D[d] H[h] m[m] s[s]");
       const ram = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(1);
       
-      const msg = `💠 𝗨𝗟𝗧𝗥𝗔-𝗡𝗘𝗧 𝗟𝗜𝗩𝗘 🛰️\n━━━━━━━━━━━━━━━━━━━━\n🕒 𝗧𝗶𝗺𝗲: ${time} | ${date}\n📍 𝗟𝗼𝗰: Kurigram, Rowmari\n🌡️ 𝗪𝘁𝗵𝗿: ${weather}\n━━━━━━━━━━━━━━━━━━━━\n📜 𝗠𝗦𝗚: ${quotes[hour]}\n━━━━━━━━━━━━━━━━━━━━\n🕋 𝗣𝗿𝗮𝘆: ${prayers}\n🚀 𝗥𝗔𝗠: ${ram}MB | ⚡ 𝗨𝗽: ${uptime}\n✅ 𝗦𝘁𝗮𝘁𝘂𝘀: Optimal Performance\n┄┉❈✡️⋆⃝চাঁদেড়~পাহাড়✿⃝🪬❈┉┄`;
+      const msg = `💠 𝗨𝗟𝗧𝗥𝗔-𝗡𝗘𝗧 𝗟𝗜𝗩𝗘 🛰️\n━━━━━━━━━━━━━━━━━━━━\n🕒 𝗧𝗶𝗺𝗲: ${time} | ${date}\n📍 𝗟𝗼𝗰: Kurigram, Rowmari\n🌡️ 𝗪𝘁𝗵𝗿: ${weather}\n━━━━━━━━━━━━━━━━━━━━\n📜 𝗠𝗦𝗚: ${quotes[hour]}\n━━━━━━━━━━━━━━━━━━━━\n🕋 𝗣𝗿𝗮𝘆: ${prayers}\n🚀 𝗥𝗔𝗠: ${ram} MB | ⚡ 𝗨𝗽: ${uptime}\n✅ 𝗦𝘁𝗮𝘁𝘂𝘀: Optimal Performance\n┄┉❈✡️⋆⃝চাঁদেড়~পাহাড়✿⃝🪬❈┉┄`;
 
       const allThreads = global.data.allThreadID || [];
+      console.log(`[AUTOSENT] Sending updates to ${allThreads.length} threads.`);
+
       for (const threadID of allThreads) {
-        api.sendMessage(msg, threadID);
-        await new Promise(res => setTimeout(res, 300)); 
+        // বটের নিজের আইডিতে মেসেজ পাঠাবে না
+        if (threadID != api.getCurrentUserID()) {
+           api.sendMessage(msg, threadID, (err) => {
+              if (err) console.log(`[AUTOSENT] Error in thread ${threadID}`);
+           });
+           await new Promise(res => setTimeout(res, 500)); // স্প্যাম এড়াতে একটু গ্যাপ
+        }
       }
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error("[AUTOSENT ERROR]", err);
+    }
   });
 };
 
-module.exports.run = () => {};
+module.exports.run = async ({ api, event }) => {
+  return api.sendMessage("মাস্টার বেলাল, এটি একটি অটোমেটিক মডিউল। প্রতি ঘণ্টার শুরুতে এটি নিজে থেকেই আপডেট পাঠাবে।", event.threadID);
+};
