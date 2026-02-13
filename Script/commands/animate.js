@@ -4,25 +4,33 @@ const path = require('path');
 
 module.exports.config = {
   name: "animate",
-  version: "1.0.0",
+  version: "2.0.0",
   hasPermssion: 0,
-  credits: "Neoaz ゐ",
-  description: "Generate animated videos from text prompts using AI.",
+  credits: "Belal x Gemini", // আপনার নাম যুক্ত করা হয়েছে
+  description: "টেক্সট অথবা ছবি থেকে AI ভিডিও জেনারেট করুন।",
   commandCategory: "AI",
-  usages: "[prompt]",
-  cooldowns: 30,
+  usages: "[প্রম্পট অথবা ছবিতে রিপ্লাই দিন]",
+  cooldowns: 10,
 };
 
 const API_ENDPOINT = "https://metakexbyneokex.fly.dev/animate";
 const CACHE_DIR = path.join(__dirname, 'cache');
 
 module.exports.run = async function ({ api, event, args }) {
-  const { threadID, messageID } = event;
-  const prompt = args.join(" ").trim();
+  const { threadID, messageID, type, messageReply } = event;
+  let prompt = args.join(" ").trim();
+  let imageUrl = "";
 
-  // প্রম্পট চেক
-  if (!prompt) {
-    return api.sendMessage("Please provide a prompt to generate a video.\nExample: /animate a cat is swimming", threadID, messageID);
+  // মেনশন বা রিপ্লাই সিস্টেম চেক
+  if (type === "message_reply") {
+    if (messageReply.attachments && messageReply.attachments[0]?.type === "photo") {
+      imageUrl = messageReply.attachments[0].url;
+    }
+  }
+
+  // প্রম্পট চেক (যদি রিপ্লাই না হয় এবং টেক্সটও না থাকে)
+  if (!prompt && !imageUrl) {
+    return api.sendMessage("দয়া করে একটি প্রম্পট লিখুন অথবা কোনো ছবিতে রিপ্লাই দিয়ে '/animate' লিখুন।\nউদাহরণ: /animate a cat is dancing", threadID, messageID);
   }
 
   // ক্যাশ ডিরেক্টরি তৈরি
@@ -30,25 +38,26 @@ module.exports.run = async function ({ api, event, args }) {
     fs.mkdirSync(CACHE_DIR, { recursive: true });
   }
 
-  // রিঅ্যাকশন দেওয়া
   api.setMessageReaction("⏳", messageID, () => {}, true);
-  
   let tempFilePath = path.join(CACHE_DIR, `animate_${Date.now()}.mp4`);
 
   try {
-    const fullApiUrl = `${API_ENDPOINT}?prompt=${encodeURIComponent(prompt)}`;
+    // API URL তৈরি (ছবি থাকলে ছবিসহ, না থাকলে শুধু প্রম্পট)
+    let fullApiUrl = `${API_ENDPOINT}?prompt=${encodeURIComponent(prompt)}`;
+    if (imageUrl) {
+      fullApiUrl += `&image_url=${encodeURIComponent(imageUrl)}`;
+    }
     
-    // API থেকে ভিডিওর লিঙ্ক নেওয়া
     const apiResponse = await axios.get(fullApiUrl, { timeout: 120000 });
     const data = apiResponse.data;
 
     if (!data.success || !data.video_urls || data.video_urls.length === 0) {
-      throw new Error(data.message || "API returned no video.");
+      throw new Error(data.message || "API কোনো ভিডিও দেয়নি।");
     }
 
     const videoUrl = data.video_urls[0];
 
-    // ভিডিও ডাউনলোড করা
+    // ভিডিও ডাউনলোড
     const response = await axios({
       method: 'get',
       url: videoUrl,
@@ -61,30 +70,24 @@ module.exports.run = async function ({ api, event, args }) {
     writer.on('finish', async () => {
       api.setMessageReaction("✅", messageID, () => {}, true);
       
-      // ভিডিও পাঠানো
       await api.sendMessage({
-        body: "Video generated 🐦",
+        body: "আপনার ভিডিও তৈরি হয়েছে! 🎥",
         attachment: fs.createReadStream(tempFilePath)
       }, threadID, () => {
-          // ভিডিও পাঠানোর পর ফাইল ডিলিট করা
           if (fs.existsSync(tempFilePath)) {
             fs.unlinkSync(tempFilePath);
           }
       }, messageID);
     });
 
-    writer.on('error', (err) => {
-      throw err;
-    });
-
   } catch (error) {
     api.setMessageReaction("❌", messageID, () => {}, true);
-    console.error("Animate Command Error:", error);
-    api.sendMessage("Failed to generate video. Please try again later.", threadID, messageID);
+    console.error("Animate Error:", error);
+    api.sendMessage("ভিডিও তৈরি করতে ব্যর্থ হয়েছে। সার্ভার ডাউন থাকতে পারে।", threadID, messageID);
     
-    // এরর হলে ফাইল ক্লিন আপ
     if (fs.existsSync(tempFilePath)) {
       fs.unlinkSync(tempFilePath);
     }
   }
 };
+                                 
